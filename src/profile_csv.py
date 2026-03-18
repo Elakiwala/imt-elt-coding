@@ -15,7 +15,7 @@ s3 = boto3.client("s3",
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
 )
 
-"""# --- CSV: Read products.csv ---
+# --- CSV: Read products.csv ---
 response = s3.get_object(Bucket="kickz-empire-data", Key="raw/order_line_items/order_line_items.csv")
 df = pd.read_csv(StringIO(response["Body"].read().decode("utf-8")))
 
@@ -24,12 +24,11 @@ print(df.dtypes)       # column types
 
 df["prix_tous_produits"] = df["unit_price_usd"] * df["quantity"]
 df["diff"] = df["line_total_usd"] - df["prix_tous_produits"]
-
+print(df[["line_total_usd", "unit_price_usd", "quantity", "prix_tous_produits", "diff"]].head(10))
 res = (df["diff"].abs() < 0.01).all() 
 
 print("Toutes les lignes correspondent:", res)
 
-"""
 
 """print(df.head())       # first rows
 print(df.describe())   # statistics"""
@@ -53,7 +52,7 @@ print("Sentiment raw:", df_reviews["_sentiment_raw"].unique())
 #print(df_reviews["_moderation_score"].describe())
 print(df_reviews["_sentiment_raw"].value_counts())"""
 
-
+"""
 # --- Parquet: Read a single partition file ---
 response = s3.get_object(
     Bucket="kickz-empire-data",
@@ -69,3 +68,4 @@ print(df_click.head())
 print(df_click["event_type"].unique())
 print(df_click["event_type"].value_counts())
 print(df_click["event_type"])
+"""
