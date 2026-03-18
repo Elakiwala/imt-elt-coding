@@ -86,7 +86,7 @@ def _read_csv_from_s3(s3_key: str) -> pd.DataFrame:
     # TODO: Download the CSV from S3 and return it as a DataFrame
     # Steps: get S3 client → get_object() → read & decode the body → pd.read_csv()
     # Remember: read_csv() expects a file-like object, not a raw string
-    s3 = _get_s3_client
+    s3 = _get_s3_client()
     object = s3.get_object(Bucket="kickz-empire-data", Key=s3_key)
     body = object["Body"].read().decode("utf-8")
     df = pd.read_csv(StringIO(body))
@@ -274,7 +274,11 @@ def extract_orders() -> pd.DataFrame:
         pd.DataFrame: The order data.
     """
     # TODO: Same pattern as extract_products()
-    raise NotImplementedError("TODO: Implement extract_orders()")
+    df =  _read_csv_from_s3("raw/orders/orders.csv")
+    print(f"Orders:{df.shape[0]} rows, {df.shape[1]} columns")
+    _load_to_bronze(df, "orders", if_exists="replace")
+    return df
+    #raise NotImplementedError("TODO: Implement extract_orders()")
 
 
 def extract_order_line_items() -> pd.DataFrame:
@@ -288,7 +292,11 @@ def extract_order_line_items() -> pd.DataFrame:
         pd.DataFrame: The order line item data.
     """
     # TODO: Same pattern as extract_products()
-    raise NotImplementedError("TODO: Implement extract_order_line_items()")
+    df =  _read_csv_from_s3("raw/order_line_items/order_line_items.csv")
+    print(f"Order line items:{df.shape[0]} rows, {df.shape[1]} columns")
+    _load_to_bronze(df, "order_line_items", if_exists="replace")
+    return df
+    #raise NotImplementedError("TODO: Implement extract_order_line_items()")
 
 
 # ---------------------------------------------------------------------------
@@ -310,7 +318,11 @@ def extract_reviews() -> pd.DataFrame:
         pd.DataFrame: The reviews data.
     """
     # TODO: Same pattern, but use _read_jsonl_from_s3() instead of _read_csv_from_s3()
-    raise NotImplementedError("TODO: Implement extract_reviews()")
+    df =  _read_jsonl_from_s3("raw/reviews/reviews.jsonl")
+    print(f"Reviews:{df.shape[0]} rows, {df.shape[1]} columns")
+    _load_to_bronze(df, "reviews", if_exists="replace")
+    return df
+    #raise NotImplementedError("TODO: Implement extract_reviews()")
 
 
 # ---------------------------------------------------------------------------
@@ -342,7 +354,11 @@ def extract_clickstream() -> pd.DataFrame:
     """
     # TODO: Same pattern, but use _read_partitioned_parquet_from_s3()
     # Note: pass a prefix (folder path), not a file key
-    raise NotImplementedError("TODO: Implement extract_clickstream()")
+    df =  _read_partitioned_parquet_from_s3("raw/clickstream/")
+    print(f"Clickstreams:{df.shape[0]} rows, {df.shape[1]} columns")
+    _load_to_bronze(df, "clickstream", if_exists="replace")
+    return df
+    #raise NotImplementedError("TODO: Implement extract_clickstream()")
 
 
 # ---------------------------------------------------------------------------
@@ -368,8 +384,14 @@ def extract_all() -> dict[str, pd.DataFrame]:
 
     # TODO: Call each extract_*() function and store the result in the dict
     # There are 6 functions to call: 4 CSV + 1 JSONL + 1 Parquet
+    results["products"] = extract_products()
+    results["users"] = extract_users()
+    results["orders"] = extract_orders()
+    results["order_line_items"] = extract_order_line_items()
+    results["reviews"] = extract_reviews()
+    results["clickstream"] = extract_clickstream()
 
-    raise NotImplementedError("TODO: Implement extract_all()")
+    #raise NotImplementedError("TODO: Implement extract_all()")
 
     print(f"\n  ✅ Extraction complete — {len(results)} tables loaded into {BRONZE_SCHEMA}")
     return results
