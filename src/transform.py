@@ -68,7 +68,7 @@ def _drop_internal_columns(df: pd.DataFrame) -> pd.DataFrame:
     colonnes = []
     for col in df.columns:
         if col.startswith("_"):
-            colonnes = colonnes.append(col)
+            colonnes.append(col)
     df = df.drop(columns=colonnes)
     print("Nombre colonnes supprimées : ", len(colonnes))
     return df

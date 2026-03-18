@@ -20,9 +20,9 @@ RDS_DATABASE = os.getenv("RDS_DATABASE")
 RDS_USER = os.getenv("RDS_USER")
 RDS_PASSWORD = os.getenv("RDS_PASSWORD")
 
-BRONZE_SCHEMA = os.getenv("BRONZE_SCHEMA", "bronze_group0")
-SILVER_SCHEMA = os.getenv("SILVER_SCHEMA", "silver_group0")
-GOLD_SCHEMA = os.getenv("GOLD_SCHEMA", "gold_group0")
+BRONZE_SCHEMA = os.getenv("BRONZE_SCHEMA", "bronze_group5")
+SILVER_SCHEMA = os.getenv("SILVER_SCHEMA", "silver_group5")
+GOLD_SCHEMA = os.getenv("GOLD_SCHEMA", "gold_group5")
 
 
 def get_engine():
