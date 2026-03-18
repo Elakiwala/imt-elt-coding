@@ -86,7 +86,7 @@ def _read_csv_from_s3(s3_key: str) -> pd.DataFrame:
     # TODO: Download the CSV from S3 and return it as a DataFrame
     # Steps: get S3 client → get_object() → read & decode the body → pd.read_csv()
     # Remember: read_csv() expects a file-like object, not a raw string
-    s3 = boto3.client("s3")
+    s3 = _get_s3_client
     object = s3.get_object(Bucket="kickz-empire-data", Key=s3_key)
     body = object["Body"].read().decode("utf-8")
     df = pd.read_csv(StringIO(body))
@@ -115,7 +115,7 @@ def _read_jsonl_from_s3(s3_key: str) -> pd.DataFrame:
     # TODO: Download the JSONL from S3 and return it as a DataFrame
     # Very similar to _read_csv_from_s3(), but use pd.read_json() instead.
     # Key parameter: lines=True (tells pandas each line is a separate JSON object)
-    s3 = boto3.client("s3")
+    s3 = _get_s3_client()
     object = s3.get_object(Bucket="kickz-empire-data", Key=s3_key)
     body = object["Body"].read().decode("utf-8")
     df = pd.read_json(StringIO(body), lines=True)
@@ -157,20 +157,25 @@ def _read_partitioned_parquet_from_s3(s3_prefix: str) -> pd.DataFrame:
     #   3. For each file: download with get_object(), read with pq.read_table()
     #      (Parquet is binary → use BytesIO, not StringIO)
     #   4. Collect all DataFrames in a list, then pd.concat() them
-    s3 = boto3.client("s3")
+    s3 = _get_s3_client()
     paginator = s3.get_paginator("list_objects_v2")
-    pages = paginator.paginate(Bucket="kickz-empire-data", Prefix=s3_prefix)
+    page_iterator = paginator.paginate(Bucket="kickz-empire-data", Prefix=s3_prefix)
     dfs = []
-    for page in pages:
-        for object in page.get("Contents", []):
-            key = object["Key"]
+    for page in page_iterator:
+        keys = []
+        contenu = page.get("Contents", [])
+        for obj in contenu:
+            key = obj["Key"]
             if key.endswith(".parquet"):
-                parquet_object = s3.get_object(Bucket="kickz-empire-data", Key=key)
-                parquet_body = parquet_object["Body"].read()
-                table = pq.read_table(BytesIO(parquet_body))
-                df = table.to_pandas()
-                dfs.append(df)
-    if dfs:
+                keys.append(key)
+        for key in keys:
+            object = s3.get_object(Bucket="kickz-empire-data", Key=key)
+            body = object["Body"].read()
+            table = pq.read_table(BytesIO(body))
+            df = table.to_pandas()
+            dfs.append(df)
+    
+    if dfs: 
         return pd.concat(dfs, ignore_index=True)
     else:
         return pd.DataFrame()
@@ -207,7 +212,7 @@ def _load_to_bronze(df: pd.DataFrame, table_name: str, if_exists: str = "replace
     # You'll need: get_engine(), and the right to_sql() parameters
     # Don't forget: index=False (we don't want the pandas index as a column)
     engine = get_engine()
-    df.to_sql(name=table_name, con=engine, schema="bronze", if_exists=if_exists, index=False)   
+    df.to_sql(name=table_name, con=engine, schema=BRONZE_SCHEMA, if_exists=if_exists, index=False)   
     #raise NotImplementedError("TODO: Implement _load_to_bronze()")
 
 
