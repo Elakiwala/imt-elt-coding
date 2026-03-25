@@ -41,25 +41,121 @@ class TestTransformProducts:
     @patch("src.transform._read_bronze")
     # Mock _load_to_silver so it doesn't hit the DB
     @patch("src.transform._load_to_silver")
+
     # Test that invalid prices (<=0) are removed
     def test_supprimer_prix_invalides(self, mock_load, mock_read, sample_products):
         mock_read.return_value = sample_products
         transform_products()
-        df_charge = mock_load.call_args[0][0]  # Get the DataFrame passed to _load_to_silver
-        assert all(df_charge["price_usd"] > 0), "Des prix invalides (<=0) ne devraient pas être présents"
+        df_charge = mock_load.call_args[0][0]  
+        assert all(df_charge["price_usd"] > 0)
+
+
+    # Mock _read_bronze to return sample_products fixture
+    @patch("src.transform._read_bronze")
+    # Mock _load_to_silver so it doesn't hit the DB
+    @patch("src.transform._load_to_silver")
     # Test that tags are normalized ('|' replaced with ', ')
+    def test_normaliser_tags(self, mock_load, mock_read, sample_products):
+        mock_read.return_value = sample_products
+        transform_products()
+        df_charge = mock_load.call_args[0][0]  
+        assert "|" not in df_charge["tags"].values[0]
+        assert ", " in df_charge["tags"].values[0]
+    
+    # Mock _read_bronze to return sample_products fixture
+    @patch("src.transform._read_bronze")
+    # Mock _load_to_silver so it doesn't hit the DB
+    @patch("src.transform._load_to_silver")
     # Test that boolean columns are converted
+    def test_convertir_booleans(self, mock_load, mock_read, sample_products):
+        mock_read.return_value = sample_products
+        transform_products()
+        df_charge = mock_load.call_args[0][0]  
+        assert "is_active" in df_charge.columns
+        assert "is_hype_product" in df_charge.columns
+        assert df_charge["is_active"].dtype == bool
+        assert df_charge["is_hype_product"].dtype == bool
 
 
 class TestTransformUsers:
     """Tests for transform_users()."""
+    # Mock _read_bronze to return sample_products fixture
+    @patch("src.transform._read_bronze")
+    # Mock _load_to_silver so it doesn't hit the DB
+    @patch("src.transform._load_to_silver")
     # Test that PII columns (_hashed_password, _last_ip, etc.) are removed
+    # PII = ["_hashed_password", "_last_ip", "email", "first_name", "last_name", "phone"]
+    def test_supprimer_colonnes_pii(self, mock_load, mock_read, sample_users):
+        mock_read.return_value = sample_users
+        transform_users()
+        df_charge = mock_load.call_args[0][0]  
+        for col in ["_hashed_password", "_last_ip"]:
+            assert col not in df_charge.columns
+        assert "_hashed_password" not in df_charge.columns
+        assert "_last_ip" not in df_charge.columns
+
+    # Mock _read_bronze to return sample_products fixture
+    @patch("src.transform._read_bronze")
+    # Mock _load_to_silver so it doesn't hit the DB
+    @patch("src.transform._load_to_silver")
     # Test that NULL loyalty_tier is filled with 'none'
+    def test_remplir_loyalty_tier(self, mock_load, mock_read, sample_users):
+        mock_read.return_value = sample_users
+        transform_users()
+        df_charge = mock_load.call_args[0][0]  
+        assert df_charge["loyalty_tier"].values[0] == "gold"
+        assert df_charge["loyalty_tier"].values[1] == "none"
+
+    # Mock _read_bronze to return sample_products fixture
+    @patch("src.transform._read_bronze")
+    # Mock _load_to_silver so it doesn't hit the DB
+    @patch("src.transform._load_to_silver")
     # Test that emails are lowercased and stripped
+    def test_normaliser_emails(self, mock_load, mock_read, sample_users):
+        df = pd.DataFrame({
+            "email": ["  eva.lansalot@imt-atlantique.net "],
+            "loyalty_tier": ["gold"],
+        })
+        mock_read.return_value = df
+        transform_users()
+        df_charge = mock_load.call_args[0][0]
+        assert df_charge["email"].values[0] == "eva.lansalot@imt-atlantique.net"
 
 
 class TestTransformOrders:
     """Tests for transform_orders()."""
+    # Mock _read_bronze to return sample_products fixture
+    @patch("src.transform._read_bronze")
+    # Mock _load_to_silver so it doesn't hit the DB
+    @patch("src.transform._load_to_silver")
     # Test that invalid statuses are flagged/removed
+    def test_gérer_statuts_invalides(self, mock_load, mock_read, sample_orders):
+        mock_read.return_value = sample_orders
+        transform_orders()
+        df_charge = mock_load.call_args[0][0]  
+        #assert "invalid_status" in df_charge.columns
+        assert "invalid_status" not in df_charge["status"].values
+
+
+    # Mock _read_bronze to return sample_products fixture
+    @patch("src.transform._read_bronze")
+    # Mock _load_to_silver so it doesn't hit the DB
+    @patch("src.transform._load_to_silver")
     # Test that order_date is converted to datetime
+    def test_convertir_order_date(self, mock_load, mock_read, sample_orders):
+        mock_read.return_value = sample_orders
+        transform_orders()
+        df_charge = mock_load.call_args[0][0]  
+        assert not isinstance(df_charge["order_date"].values[0], str)
+
+    # Mock _read_bronze to return sample_products fixture
+    @patch("src.transform._read_bronze")
+    # Mock _load_to_silver so it doesn't hit the DB
+    @patch("src.transform._load_to_silver")
     # Test that NULL coupon_code is replaced with ''
+    def test_remplir_coupon_code(self, mock_load, mock_read, sample_orders):
+        mock_read.return_value = sample_orders
+        transform_orders()
+        df_charge = mock_load.call_args[0][0]  
+        assert None not in df_charge["coupon_code"].values
+        assert "" in df_charge["coupon_code"].values
